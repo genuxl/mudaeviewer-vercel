@@ -183,6 +183,11 @@
         
         <div class="upload-section">
             <h2>Upload Character Data</h2>
+            {% if error_message %}
+                <div style="color: #e74c3c; padding: 10px; background-color: #2C2F33; border-radius: 5px; margin-bottom: 15px;">
+                    {{ error_message }}
+                </div>
+            {% endif %}
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <input type="file" name="zip_file" accept=".zip" required>

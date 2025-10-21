@@ -15,70 +15,104 @@ def upload_and_view(request):
     characters = []
     paginator = None
     page_obj = None
+    error_message = None
     
     # Handle uploaded zip file
     if request.method == 'POST' and request.FILES.get('zip_file'):
         uploaded_file = request.FILES['zip_file']
         
-        # Create upload directory if it doesn't exist
-        upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploads')
-        os.makedirs(upload_dir, exist_ok=True)
-        
-        # Save uploaded file temporarily
-        temp_path = os.path.join(upload_dir, uploaded_file.name)
-        with open(temp_path, 'wb+') as destination:
-            for chunk in uploaded_file.chunks():
-                destination.write(chunk)
-        
-        # Extract the zip file
-        with zipfile.ZipFile(temp_path, 'r') as zip_ref:
-            extract_dir = os.path.join(upload_dir, 'extracted')
-            os.makedirs(extract_dir, exist_ok=True)
-            zip_ref.extractall(extract_dir)
-        
-        # Move images to MEDIA_ROOT so Django can serve them
-        images_dir = os.path.join(settings.MEDIA_ROOT, 'images')
-        os.makedirs(images_dir, exist_ok=True)
-        
-        # Find and move image files
-        for root, dirs, files in os.walk(extract_dir):
-            for file in files:
-                if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
-                    src_path = os.path.join(root, file)
-                    dest_path = os.path.join(images_dir, file)
-                    shutil.move(src_path, dest_path)
-        
-        # Look for data.json in the extracted files
-        data_json_path = os.path.join(extract_dir, 'data.json')
-        if os.path.exists(data_json_path):
-            with open(data_json_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                
-            # Clear existing characters
-            Character.objects.all().delete()
+        try:
+            # Create upload directory if it doesn't exist
+            upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploads')
+            os.makedirs(upload_dir, exist_ok=True)
             
-            # Save new characters to database with sort_order
-            sort_order = 0
-            for char_data in data['characters']:
-                image_path = char_data.get('image', '')
-                # Update the image path to point to the media directory
-                if image_path:
-                    filename = os.path.basename(image_path)
-                    new_image_path = f"images/{filename}"  # Store relative path to images folder
-                else:
-                    new_image_path = ""
+            # Save uploaded file temporarily
+            temp_path = os.path.join(upload_dir, uploaded_file.name)
+            with open(temp_path, 'wb+') as destination:
+                for chunk in uploaded_file.chunks():
+                    destination.write(chunk)
+            
+            # Extract the zip file with security checks
+            with zipfile.ZipFile(temp_path, 'r') as zip_ref:
+                # Security check: prevent zip slip vulnerability
+                for member in zip_ref.namelist():
+                    # Resolve the path to ensure it doesn't contain '..'
+                    safe_path = os.path.realpath(os.path.join(upload_dir, 'extracted'))
+                    extracted_path = os.path.realpath(os.path.join(upload_dir, 'extracted', member))
+                    if not extracted_path.startswith(safe_path):
+                        raise Exception("Unsafe zip file: contains directory traversal")
                 
-                Character.objects.create(
-                    rank=char_data.get('rank', ''),
-                    name=char_data.get('name', ''),
-                    series=char_data.get('series', ''),
-                    value=char_data.get('value', ''),
-                    note=char_data.get('note', ''),
-                    image=new_image_path,  # Store just the filename part
-                    sort_order=sort_order,  # Add the order in which they appear in the JSON
-                    in_trade_list=False,  # Initialize to not in trade list
-                )
-                sort_order += 1
+                extract_dir = os.path.join(upload_dir, 'extracted')
+                os.makedirs(extract_dir, exist_ok=True)
+                zip_ref.extractall(extract_dir)
+            
+            # Move images to MEDIA_ROOT so Django can serve them
+            images_dir = os.path.join(settings.MEDIA_ROOT, 'images')
+            os.makedirs(images_dir, exist_ok=True)
+            
+            # Find and move image files
+            for root, dirs, files in os.walk(extract_dir):
+                for file in files:
+                    if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
+                        src_path = os.path.join(root, file)
+                        dest_path = os.path.join(images_dir, file)
+                        # Security check: verify that source path is under extract_dir
+                        if os.path.commonpath([extract_dir]) == os.path.commonpath([extract_dir, src_path]):
+                            shutil.move(src_path, dest_path)
+            
+            # Look for data.json in the extracted files
+            data_json_path = os.path.join(extract_dir, 'data.json')
+            if os.path.exists(data_json_path):
+                with open(data_json_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    
+                # Clear existing characters
+                Character.objects.all().delete()
+                
+                # Save new characters to database with sort_order
+                sort_order = 0
+                for char_data in data['characters']:
+                    image_path = char_data.get('image', '')
+                    # Update the image path to point to the media directory
+                    if image_path:
+                        filename = os.path.basename(image_path)
+                        new_image_path = f"images/{filename}"  # Store relative path to images folder
+                    else:
+                        new_image_path = ""
+                    
+                    Character.objects.create(
+                        rank=char_data.get('rank', ''),
+                        name=char_data.get('name', ''),
+                        series=char_data.get('series', ''),
+                        value=char_data.get('value', ''),
+                        note=char_data.get('note', ''),
+                        image=new_image_path,  # Store just the filename part
+                        sort_order=sort_order,  # Add the order in which they appear in the JSON
+                        in_trade_list=False,  # Initialize to not in trade list
+                    )
+                    sort_order += 1
+        except zipfile.BadZipFile:
+            # Handle invalid zip file
+            error_message = "Invalid zip file format"
+        except Exception as e:
+            # Handle any other errors during upload processing
+            error_message = f"Error processing uploaded file: {str(e)}"
+        finally:
+            # Clean up temporary files
+            try:
+                if 'temp_path' in locals() and os.path.exists(temp_path):
+                    os.remove(temp_path)
+                if 'extract_dir' in locals() and os.path.exists(extract_dir):
+                    import shutil
+                    shutil.rmtree(extract_dir)
+            except:
+                pass  # Ignore cleanup errors
+        
+        # If there was an error, we should handle it appropriately
+        if 'error_message' in locals() and error_message:
+            # For now, just continue to show the page but with error handling
+            # In the future, you might want to show the error differently
+            pass
     
     # Handle search
     search_query = request.GET.get('search', '')
@@ -129,6 +163,12 @@ def upload_and_view(request):
         'total_characters': all_characters.count(),
         'MEDIA_URL': settings.MEDIA_URL,
     }
+    
+    # Add error message if there was one
+    if 'error_message' in locals() and error_message:
+        # Instead of displaying error as context (because it might get overwritten),
+        # we can add it to the context with a more specific approach
+        context['error_message'] = error_message
     
     return render(request, 'character_viewer/upload_and_view.html', context)
 
