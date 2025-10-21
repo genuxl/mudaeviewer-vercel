@@ -5,7 +5,7 @@ import shutil
 from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
 from django.conf import settings
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
 from .models import Character
@@ -393,3 +393,9 @@ def remove_all_from_trade_list(request):
     
     # If not a POST request, redirect back to the trade list page
     return HttpResponseRedirect(reverse('trade_list'))
+
+
+def custom_logout(request):
+    """Custom logout view that handles GET requests by redirecting to login page."""
+    logout(request)
+    return redirect('upload_and_view')  # Redirect to the main page after logout
