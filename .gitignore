@@ -1,0 +1,31 @@
+db.sqlite3
+__pycache__/
+*.pyc
+.env
+venv/
+.envrc
+.git/credentials
+*.log
+.DS_Store
+
+# Media files - these should not be in the repository for production
+media/
+# Except for the directory structure
+!media/
+!media/images/
+!media/images/.gitkeep
+
+# Large files
+*.zip
+*.rar
+*.tar
+*.gz
+*.7z
+*.iso
+*.dmg
+
+# Environment specific
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
