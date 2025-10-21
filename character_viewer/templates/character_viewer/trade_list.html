@@ -166,7 +166,11 @@
             {% for character in page_obj %}
             <div class="character-card">
                 {% if character.image and character.image_exists %}
-                    <img src="{{ MEDIA_URL }}{{ character.image }}" alt="{{ character.name }}" class="character-image" onclick="showImageModal('{{ MEDIA_URL }}{{ character.image }}')">
+                    {% if character.image|slice:":7" == "http://" or character.image|slice:":8" == "https://" %}
+                        <img src="{{ character.image }}" alt="{{ character.name }}" class="character-image" onclick="showImageModal('{{ character.image }}')">
+                    {% else %}
+                        <img src="{{ MEDIA_URL }}{{ character.image }}" alt="{{ character.name }}" class="character-image" onclick="showImageModal('{{ MEDIA_URL }}{{ character.image }}')">
+                    {% endif %}
                 {% else %}
                     <div class="character-image" style="background-color: #eee; display: flex; align-items: center; justify-content: center; cursor: default;">
                         No Image
