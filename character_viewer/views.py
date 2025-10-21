@@ -103,7 +103,6 @@ def upload_and_view(request):
                 if 'temp_path' in locals() and os.path.exists(temp_path):
                     os.remove(temp_path)
                 if 'extract_dir' in locals() and os.path.exists(extract_dir):
-                    import shutil
                     shutil.rmtree(extract_dir)
             except:
                 pass  # Ignore cleanup errors
