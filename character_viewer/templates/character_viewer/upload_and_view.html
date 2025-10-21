@@ -190,7 +190,7 @@
             {% endif %}
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
-                <input type="file" name="zip_file" accept=".zip" required>
+                <input type="file" name="json_file" accept=".json" required>
                 <button type="submit">Upload and View Characters</button>
             </form>
             

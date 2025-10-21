@@ -17,77 +17,43 @@ def upload_and_view(request):
     page_obj = None
     error_message = None
     
-    # Handle uploaded zip file
-    if request.method == 'POST' and request.FILES.get('zip_file'):
-        uploaded_file = request.FILES['zip_file']
+    # Handle uploaded JSON file
+    if request.method == 'POST' and request.FILES.get('json_file'):
+        uploaded_file = request.FILES['json_file']
         
         try:
-            # Create upload directory if it doesn't exist
-            upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploads')
-            os.makedirs(upload_dir, exist_ok=True)
-            
-            # Save uploaded file temporarily
-            temp_path = os.path.join(upload_dir, uploaded_file.name)
-            with open(temp_path, 'wb+') as destination:
-                for chunk in uploaded_file.chunks():
-                    destination.write(chunk)
-            
-            # Extract the zip file with security checks
-            with zipfile.ZipFile(temp_path, 'r') as zip_ref:
-                # Security check: prevent zip slip vulnerability
-                for member in zip_ref.namelist():
-                    # Resolve the path to ensure it doesn't contain '..'
-                    safe_path = os.path.realpath(os.path.join(upload_dir, 'extracted'))
-                    extracted_path = os.path.realpath(os.path.join(upload_dir, 'extracted', member))
-                    if not extracted_path.startswith(safe_path):
-                        raise Exception("Unsafe zip file: contains directory traversal")
-                
-                extract_dir = os.path.join(upload_dir, 'extracted')
-                os.makedirs(extract_dir, exist_ok=True)
-                zip_ref.extractall(extract_dir)
-            
-            # Look for data.json in the extracted files (images should be referenced by URL)
-            data_json_path = os.path.join(extract_dir, 'data.json')
-            if os.path.exists(data_json_path):
-                with open(data_json_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
+            # Process the uploaded JSON file directly
+            # Read the file content
+            file_content = uploaded_file.read().decode('utf-8')
+            data = json.loads(file_content)
                     
-                # Clear existing characters
-                Character.objects.all().delete()
+            # Clear existing characters
+            Character.objects.all().delete()
+            
+            # Save new characters to database with sort_order
+            sort_order = 0
+            for char_data in data['characters']:
+                # The image field in the JSON should already contain the full URL
+                image_url = char_data.get('image', '')
+                # Keep the image URL as is (whether it's from cdn.imgchest.com, imgur, or mudae.net)
                 
-                # Save new characters to database with sort_order
-                sort_order = 0
-                for char_data in data['characters']:
-                    # The image field in the JSON should already contain the full URL
-                    image_url = char_data.get('image', '')
-                    # Keep the image URL as is (whether it's from cdn.imgchest.com, imgur, or mudae.net)
-                    
-                    Character.objects.create(
-                        rank=char_data.get('rank', ''),
-                        name=char_data.get('name', ''),
-                        series=char_data.get('series', ''),
-                        value=char_data.get('value', ''),
-                        note=char_data.get('note', ''),
-                        image=image_url,  # Store the full image URL as provided in the JSON
-                        sort_order=sort_order,  # Add the order in which they appear in the JSON
-                        in_trade_list=False,  # Initialize to not in trade list
-                    )
-                    sort_order += 1
-        except zipfile.BadZipFile:
-            # Handle invalid zip file
-            error_message = "Invalid zip file format"
+                Character.objects.create(
+                    rank=char_data.get('rank', ''),
+                    name=char_data.get('name', ''),
+                    series=char_data.get('series', ''),
+                    value=char_data.get('value', ''),
+                    note=char_data.get('note', ''),
+                    image=image_url,  # Store the full image URL as provided in the JSON
+                    sort_order=sort_order,  # Add the order in which they appear in the JSON
+                    in_trade_list=False,  # Initialize to not in trade list
+                )
+                sort_order += 1
+        except json.JSONDecodeError:
+            # Handle invalid JSON file
+            error_message = "Invalid JSON file format"
         except Exception as e:
             # Handle any other errors during upload processing
             error_message = f"Error processing uploaded file: {str(e)}"
-        finally:
-            # Clean up temporary files
-            try:
-                if 'temp_path' in locals() and os.path.exists(temp_path):
-                    os.remove(temp_path)
-                if 'extract_dir' in locals() and os.path.exists(extract_dir):
-                    shutil.rmtree(extract_dir)
-            except:
-                pass  # Ignore cleanup errors
         
         # If there was an error, we should handle it appropriately
         if 'error_message' in locals() and error_message:
