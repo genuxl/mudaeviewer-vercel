@@ -1,6 +1,7 @@
 import json
 import zipfile
 import os
+import shutil
 from django.shortcuts import render
 from django.core.paginator import Paginator
 from django.conf import settings
@@ -45,7 +46,6 @@ def upload_and_view(request):
                 if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
                     src_path = os.path.join(root, file)
                     dest_path = os.path.join(images_dir, file)
-                    import shutil
                     shutil.move(src_path, dest_path)
         
         # Look for data.json in the extracted files
