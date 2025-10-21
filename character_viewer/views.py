@@ -151,7 +151,6 @@ def upload_and_view(request):
     for character in page_obj:
         # Check if image file exists (add a property to indicate if image is available)
         if character.image:
-            import os
             image_path = os.path.join(settings.MEDIA_ROOT, character.image)
             character.image_exists = os.path.exists(image_path)
         else:
@@ -197,7 +196,6 @@ def trade_list(request):
     for character in page_obj:
         # Check if image file exists (add a property to indicate if image is available)
         if character.image:
-            import os
             image_path = os.path.join(settings.MEDIA_ROOT, character.image)
             character.image_exists = os.path.exists(image_path)
         else:
