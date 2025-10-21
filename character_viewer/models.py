@@ -1,12 +1,14 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class Character(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='characters', null=True, blank=True)
     rank = models.CharField(max_length=20)
     name = models.CharField(max_length=200)
     series = models.CharField(max_length=200)
     value = models.CharField(max_length=20)  # e.g., "170 ka"
     note = models.TextField(blank=True)
-    image = models.CharField(max_length=500, blank=True)  # Path to image
+    image = models.TextField(blank=True)  # URL to external image
     sort_order = models.IntegerField(default=0)  # To maintain original JSON order
     in_trade_list = models.BooleanField(default=False)  # For tracking trade list status
     

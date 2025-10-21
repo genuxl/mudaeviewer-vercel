@@ -10,7 +10,9 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.contrib.auth.decorators import login_required
 
+@login_required
 def upload_and_view(request):
     characters = []
     paginator = None
@@ -27,8 +29,8 @@ def upload_and_view(request):
             file_content = uploaded_file.read().decode('utf-8')
             data = json.loads(file_content)
                     
-            # Clear existing characters
-            Character.objects.all().delete()
+            # Clear existing characters for current user
+            Character.objects.filter(user=request.user).delete()
             
             # Save new characters to database with sort_order
             sort_order = 0
@@ -38,6 +40,7 @@ def upload_and_view(request):
                 # Keep the image URL as is (whether it's from cdn.imgchest.com, imgur, or mudae.net)
                 
                 Character.objects.create(
+                    user=request.user,
                     rank=char_data.get('rank', ''),
                     name=char_data.get('name', ''),
                     series=char_data.get('series', ''),
@@ -67,13 +70,14 @@ def upload_and_view(request):
     # Handle sorting
     sort_by = request.GET.get('sort_by', 'default')  # default, rank, kakera
     
-    # Get all characters from database
+    # Get all characters from database for current user
     if search_query:
         all_characters = Character.objects.filter(
+            user=request.user,
             name__icontains=search_query
         )
     else:
-        all_characters = Character.objects.all()
+        all_characters = Character.objects.filter(user=request.user)
     
     if sort_by == 'rank':
         # Sort by rank (extract numeric value from the rank string like "#1,275")
@@ -117,12 +121,13 @@ def upload_and_view(request):
     
     return render(request, 'character_viewer/upload_and_view.html', context)
 
+@login_required
 def trade_list(request):
     # Handle search within the trade list
     search_query = request.GET.get('search', '')
     
-    # Get all characters that are in the trade list
-    trade_characters = Character.objects.filter(in_trade_list=True)
+    # Get all characters that are in the trade list for current user
+    trade_characters = Character.objects.filter(user=request.user, in_trade_list=True)
     
     # Apply search filter if provided
     if search_query:
@@ -155,11 +160,12 @@ def trade_list(request):
     return render(request, 'character_viewer/trade_list.html', context)
 
 @csrf_exempt
+@login_required
 def toggle_trade_list(request):
     if request.method == 'POST':
         character_id = request.POST.get('character_id')
         try:
-            character = Character.objects.get(id=character_id)
+            character = Character.objects.get(id=character_id, user=request.user)
             character.in_trade_list = not character.in_trade_list
             character.save()
             return JsonResponse({
@@ -173,11 +179,12 @@ def toggle_trade_list(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
 
+@login_required
 def clear_all(request):
-    """Delete all characters from the database and reload the page."""
+    """Delete all characters for the current user and reload the page."""
     if request.method == 'POST':
-        # Delete all characters from the database
-        Character.objects.all().delete()
+        # Delete all characters for the current user
+        Character.objects.filter(user=request.user).delete()
         # Redirect back to the main page
         return HttpResponseRedirect(reverse('upload_and_view'))
     
@@ -185,11 +192,12 @@ def clear_all(request):
     return HttpResponseRedirect(reverse('upload_and_view'))
 
 
+@login_required
 def remove_all_from_trade_list(request):
-    """Remove all characters from the trade list and reload the page."""
+    """Remove all characters from the trade list for the current user and reload the page."""
     if request.method == 'POST':
-        # Set in_trade_list to False for all characters
-        Character.objects.filter(in_trade_list=True).update(in_trade_list=False)
+        # Set in_trade_list to False for all characters of the current user
+        Character.objects.filter(user=request.user, in_trade_list=True).update(in_trade_list=False)
         # Redirect back to the trade list page
         return HttpResponseRedirect(reverse('trade_list'))
     
