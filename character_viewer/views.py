@@ -195,7 +195,9 @@ def clear_all(request):
 from django.contrib.auth.hashers import make_password
 import os
 
-# Temporary view to create initial admin user - REMOVE AFTER SETUP
+from django.views.decorators.csrf import csrf_protect
+
+@csrf_protect
 def temp_create_admin(request):
     flag_file = os.path.join(os.path.dirname(__file__), 'admin_created.flag')
     
@@ -224,14 +226,22 @@ def temp_create_admin(request):
         else:
             return HttpResponse("Admin user already exists.")
     
-    # Show a form to create admin
-    form_html = '''
+    # Show a form to create admin with CSRF token
+    from django.template import Context, Template
+    from django.template.context_processors import csrf
+    
+    # Get CSRF token
+    csrf_ctx = {}
+    csrf_ctx.update(csrf(request))
+    csrf_token = csrf_ctx['csrf_token']
+    
+    form_html = f'''
     <!DOCTYPE html>
     <html>
     <head>
         <title>Create Admin User</title>
         <style>
-            body { 
+            body {{ 
                 font-family: Arial, sans-serif;
                 background-color: #36393F;
                 color: #DCDDDE;
@@ -240,22 +250,22 @@ def temp_create_admin(request):
                 align-items: center;
                 height: 100vh;
                 margin: 0;
-            }
-            .container {
+            }}
+            .container {{
                 background-color: #2F3136;
                 padding: 20px;
                 border-radius: 8px;
                 box-shadow: 0 2px 10px rgba(0,0,0,0.5);
                 width: 300px;
-            }
-            .form-group {
+            }}
+            .form-group {{
                 margin-bottom: 15px;
-            }
-            .form-group label {
+            }}
+            .form-group label {{
                 display: block;
                 margin-bottom: 5px;
-            }
-            .form-group input {
+            }}
+            .form-group input {{
                 width: 100%;
                 padding: 8px;
                 border: 1px solid #36393F;
@@ -263,8 +273,8 @@ def temp_create_admin(request):
                 background-color: #40444B;
                 color: #DCDDDE;
                 box-sizing: border-box;
-            }
-            .btn {
+            }}
+            .btn {{
                 width: 100%;
                 padding: 10px;
                 background-color: #5865F2;
@@ -272,16 +282,17 @@ def temp_create_admin(request):
                 border: none;
                 border-radius: 4px;
                 cursor: pointer;
-            }
-            .btn:hover {
+            }}
+            .btn:hover {{
                 background-color: #4752C4;
-            }
+            }}
         </style>
     </head>
     <body>
         <div class="container">
             <h2>Create Admin User</h2>
             <form method="post">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
                 <div class="form-group">
                     <label for="username">Username:</label>
                     <input type="text" id="username" name="username" required>
