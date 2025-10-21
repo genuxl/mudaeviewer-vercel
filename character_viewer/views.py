@@ -46,21 +46,7 @@ def upload_and_view(request):
                 os.makedirs(extract_dir, exist_ok=True)
                 zip_ref.extractall(extract_dir)
             
-            # Move images to MEDIA_ROOT so Django can serve them
-            images_dir = os.path.join(settings.MEDIA_ROOT, 'images')
-            os.makedirs(images_dir, exist_ok=True)
-            
-            # Find and move image files
-            for root, dirs, files in os.walk(extract_dir):
-                for file in files:
-                    if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
-                        src_path = os.path.join(root, file)
-                        dest_path = os.path.join(images_dir, file)
-                        # Security check: verify that source path is under extract_dir
-                        if os.path.commonpath([extract_dir]) == os.path.commonpath([extract_dir, src_path]):
-                            shutil.move(src_path, dest_path)
-            
-            # Look for data.json in the extracted files
+            # Look for data.json in the extracted files (images should be referenced by URL)
             data_json_path = os.path.join(extract_dir, 'data.json')
             if os.path.exists(data_json_path):
                 with open(data_json_path, 'r', encoding='utf-8') as f:
@@ -72,13 +58,9 @@ def upload_and_view(request):
                 # Save new characters to database with sort_order
                 sort_order = 0
                 for char_data in data['characters']:
-                    image_path = char_data.get('image', '')
-                    # Update the image path to point to the media directory
-                    if image_path:
-                        filename = os.path.basename(image_path)
-                        new_image_path = f"images/{filename}"  # Store relative path to images folder
-                    else:
-                        new_image_path = ""
+                    # The image field in the JSON should already contain the full URL
+                    image_url = char_data.get('image', '')
+                    # Keep the image URL as is (whether it's from cdn.imgchest.com, imgur, or mudae.net)
                     
                     Character.objects.create(
                         rank=char_data.get('rank', ''),
@@ -86,7 +68,7 @@ def upload_and_view(request):
                         series=char_data.get('series', ''),
                         value=char_data.get('value', ''),
                         note=char_data.get('note', ''),
-                        image=new_image_path,  # Store just the filename part
+                        image=image_url,  # Store the full image URL as provided in the JSON
                         sort_order=sort_order,  # Add the order in which they appear in the JSON
                         in_trade_list=False,  # Initialize to not in trade list
                     )
@@ -146,14 +128,13 @@ def upload_and_view(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Prepare the page object with extra image existence check
+    # Prepare the page object with image URL availability check
     for character in page_obj:
-        # Check if image file exists (add a property to indicate if image is available)
-        if character.image:
-            image_path = os.path.join(settings.MEDIA_ROOT, character.image)
-            character.image_exists = os.path.exists(image_path)
+        # Check if image is a valid URL (add a property to indicate if image is available)
+        if character.image and (character.image.startswith('http://') or character.image.startswith('https://')):
+            character.image_exists = True  # Assume URL-based images are available
         else:
-            character.image_exists = False
+            character.image_exists = bool(character.image)  # For backward compatibility
     
     context = {
         'page_obj': page_obj,
@@ -191,14 +172,13 @@ def trade_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Prepare the page object with extra image existence check
+    # Prepare the page object with image URL availability check
     for character in page_obj:
-        # Check if image file exists (add a property to indicate if image is available)
-        if character.image:
-            image_path = os.path.join(settings.MEDIA_ROOT, character.image)
-            character.image_exists = os.path.exists(image_path)
+        # Check if image is a valid URL (add a property to indicate if image is available)
+        if character.image and (character.image.startswith('http://') or character.image.startswith('https://')):
+            character.image_exists = True  # Assume URL-based images are available
         else:
-            character.image_exists = False
+            character.image_exists = bool(character.image)  # For backward compatibility
     
     context = {
         'page_obj': page_obj,
