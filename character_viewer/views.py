@@ -113,6 +113,16 @@ def upload_and_view(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
+    # Prepare the page object with extra image existence check
+    for character in page_obj:
+        # Check if image file exists (add a property to indicate if image is available)
+        if character.image:
+            import os
+            image_path = os.path.join(settings.MEDIA_ROOT, character.image)
+            character.image_exists = os.path.exists(image_path)
+        else:
+            character.image_exists = False
+    
     context = {
         'page_obj': page_obj,
         'sort_by': sort_by,
@@ -142,6 +152,16 @@ def trade_list(request):
     paginator = Paginator(trade_characters, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    
+    # Prepare the page object with extra image existence check
+    for character in page_obj:
+        # Check if image file exists (add a property to indicate if image is available)
+        if character.image:
+            import os
+            image_path = os.path.join(settings.MEDIA_ROOT, character.image)
+            character.image_exists = os.path.exists(image_path)
+        else:
+            character.image_exists = False
     
     context = {
         'page_obj': page_obj,
