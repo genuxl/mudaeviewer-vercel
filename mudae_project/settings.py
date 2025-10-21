@@ -70,10 +70,13 @@ ROOT_URLCONF = 'mudae_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  # Add templates directory
+        'DIRS': [
+            BASE_DIR / 'templates',  # Main templates directory
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -152,10 +155,11 @@ if not DEBUG:
     # Tell Django to copy static assets into a path called `staticfiles` (this is specific to Render)
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 else:
-    # For local development
-    STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, 'static'),
-    ]
+    # For local development, only if directory exists
+    STATICFILES_DIRS = []
+    static_dir = os.path.join(BASE_DIR, 'static')
+    if os.path.exists(static_dir):
+        STATICFILES_DIRS = [static_dir]
 
 # Render adds its host to environment
 if 'RENDER_EXTERNAL_HOSTNAME' in os.environ:
@@ -181,5 +185,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Authentication settings
 LOGIN_URL = '/accounts/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = 'upload_and_view'
+LOGOUT_REDIRECT_URL = 'upload_and_view'

@@ -53,10 +53,14 @@ def get_temp_media_root():
     """Get the temporary media directory for this session."""
     # For Render, we still use a temp directory but acknowledge it's ephemeral
     if 'RENDER_EXTERNAL_HOSTNAME' in os.environ:
-        # Use a directory in the app root that might persist during a single deployment
-        # Note: This will still be lost when the instance restarts, but may work during a single session
-        temp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'media_temp')
-        os.makedirs(temp_dir, exist_ok=True)
+        # Use the system temp directory on Render to avoid permission issues
+        temp_dir = os.path.join(tempfile.gettempdir(), 'mudae_media_render')
+        try:
+            os.makedirs(temp_dir, exist_ok=True)
+        except Exception as e:
+            # Fallback to a relative directory if temp dir creation fails
+            temp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'media_temp')
+            os.makedirs(temp_dir, exist_ok=True)
         return temp_dir
     else:
         # For local dev, use the temp directory created at startup
