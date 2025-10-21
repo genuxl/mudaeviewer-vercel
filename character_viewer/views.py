@@ -6,7 +6,7 @@ from django.shortcuts import render
 from django.core.paginator import Paginator
 from django.conf import settings
 from .models import Character
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -191,6 +191,114 @@ def clear_all(request):
     # If not a POST request, redirect back to the main page
     return HttpResponseRedirect(reverse('upload_and_view'))
 
+
+from django.contrib.auth.hashers import make_password
+import os
+
+# Temporary view to create initial admin user - REMOVE AFTER SETUP
+def temp_create_admin(request):
+    # Check if admin user already exists
+    if os.path.exists('/tmp/admin_created.flag') or os.path.exists(os.path.join(os.path.dirname(__file__), 'admin_created.flag')):
+        return HttpResponse("Admin already created. This endpoint is disabled.", status=403)
+    
+    if request.method == 'POST':
+        from django.http import HttpResponse
+        username = request.POST.get('username', 'admin')
+        email = request.POST.get('email', 'admin@example.com')
+        password = request.POST.get('password', 'admin123')
+        
+        from django.contrib.auth.models import User
+        if not User.objects.filter(username=username).exists():
+            user = User.objects.create_user(username=username, email=email, password=password)
+            user.is_staff = True
+            user.is_superuser = True
+            user.save()
+            
+            # Create a flag file to indicate admin is created
+            with open('admin_created.flag', 'w') as f:
+                f.write('admin created')
+            
+            return HttpResponse(f"Admin user '{username}' created successfully. Please remove this view for security.")
+        else:
+            return HttpResponse("Admin user already exists.")
+    
+    # Show a form to create admin
+    form_html = '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Create Admin User</title>
+        <style>
+            body { 
+                font-family: Arial, sans-serif;
+                background-color: #36393F;
+                color: #DCDDDE;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }
+            .container {
+                background-color: #2F3136;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+                width: 300px;
+            }
+            .form-group {
+                margin-bottom: 15px;
+            }
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+            }
+            .form-group input {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #36393F;
+                border-radius: 4px;
+                background-color: #40444B;
+                color: #DCDDDE;
+                box-sizing: border-box;
+            }
+            .btn {
+                width: 100%;
+                padding: 10px;
+                background-color: #5865F2;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .btn:hover {
+                background-color: #4752C4;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Create Admin User</h2>
+            <form method="post">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn">Create Admin</button>
+            </form>
+        </div>
+    </body>
+    </html>
+    '''
+    return HttpResponse(form_html)
 
 @login_required
 def remove_all_from_trade_list(request):
