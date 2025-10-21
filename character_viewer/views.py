@@ -197,16 +197,18 @@ import os
 
 # Temporary view to create initial admin user - REMOVE AFTER SETUP
 def temp_create_admin(request):
-    # Check if admin user already exists
-    if os.path.exists('/tmp/admin_created.flag') or os.path.exists(os.path.join(os.path.dirname(__file__), 'admin_created.flag')):
+    flag_file = os.path.join(os.path.dirname(__file__), 'admin_created.flag')
+    
+    # Check if admin user already exists by checking flag file
+    if os.path.exists(flag_file):
         return HttpResponse("Admin already created. This endpoint is disabled.", status=403)
     
     if request.method == 'POST':
-        from django.http import HttpResponse
         username = request.POST.get('username', 'admin')
         email = request.POST.get('email', 'admin@example.com')
         password = request.POST.get('password', 'admin123')
         
+        # Import User inside the function to avoid circular imports
         from django.contrib.auth.models import User
         if not User.objects.filter(username=username).exists():
             user = User.objects.create_user(username=username, email=email, password=password)
@@ -215,7 +217,7 @@ def temp_create_admin(request):
             user.save()
             
             # Create a flag file to indicate admin is created
-            with open('admin_created.flag', 'w') as f:
+            with open(flag_file, 'w') as f:
                 f.write('admin created')
             
             return HttpResponse(f"Admin user '{username}' created successfully. Please remove this view for security.")
