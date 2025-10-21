@@ -8,4 +8,5 @@ urlpatterns = [
     path('clear_all/', views.clear_all, name='clear_all'),
     path('remove_all_from_trade_list/', views.remove_all_from_trade_list, name='remove_all_from_trade_list'),
     path('create-admin/', views.temp_create_admin, name='temp_create_admin'),  # Temporary - remove after setup
+    path('register/', views.register, name='register'),
 ]
