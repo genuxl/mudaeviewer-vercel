@@ -198,8 +198,14 @@ import os
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect
 
+@csrf_protect
 def register(request):
     """Allow users to register for an account"""
+    from django.template.context_processors import csrf
+    csrf_ctx = {}
+    csrf_ctx.update(csrf(request))
+    csrf_token = csrf_ctx['csrf_token']
+    
     if request.method == 'POST':
         username = request.POST.get('username')
         email = request.POST.get('email')
@@ -208,18 +214,378 @@ def register(request):
         
         # Basic validation
         if password1 != password2:
-            return HttpResponse("Passwords don't match")
+            # Show form with error
+            form_html = f'''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Register</title>
+                <style>
+                    body {{ 
+                        font-family: Arial, sans-serif;
+                        background-color: #36393F;
+                        color: #DCDDDE;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                    }}
+                    .container {{
+                        background-color: #2F3136;
+                        padding: 20px;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+                        width: 300px;
+                    }}
+                    .form-group {{
+                        margin-bottom: 15px;
+                    }}
+                    .form-group label {{
+                        display: block;
+                        margin-bottom: 5px;
+                    }}
+                    .form-group input {{
+                        width: 100%;
+                        padding: 8px;
+                        border: 1px solid #36393F;
+                        border-radius: 4px;
+                        background-color: #40444B;
+                        color: #DCDDDE;
+                        box-sizing: border-box;
+                    }}
+                    .btn {{
+                        width: 100%;
+                        padding: 10px;
+                        background-color: #5865F2;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    }}
+                    .btn:hover {{
+                        background-color: #4752C4;
+                    }}
+                    .error {{
+                        color: #ff6b6b;
+                        font-size: 0.9em;
+                        margin-bottom: 10px;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h2>Register</h2>
+                    <div class="error">Passwords don't match</div>
+                    <form method="post">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                        <div class="form-group">
+                            <label for="username">Username:</label>
+                            <input type="text" id="username" name="username" required value="{username or ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" name="email" required value="{email or ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="password1">Password:</label>
+                            <input type="password" id="password1" name="password1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password2">Confirm Password:</label>
+                            <input type="password" id="password2" name="password2" required>
+                        </div>
+                        <button type="submit" class="btn">Register</button>
+                    </form>
+                    <p style="text-align: center; margin-top: 15px;">
+                        <a href="/accounts/login/" style="color: #5865F2;">Already have an account? Login</a>
+                    </p>
+                </div>
+            </body>
+            </html>
+            '''
+            return HttpResponse(form_html)
         
         if len(password1) < 8:
-            return HttpResponse("Password must be at least 8 characters")
+            # Show form with error
+            form_html = f'''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Register</title>
+                <style>
+                    body {{ 
+                        font-family: Arial, sans-serif;
+                        background-color: #36393F;
+                        color: #DCDDDE;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                    }}
+                    .container {{
+                        background-color: #2F3136;
+                        padding: 20px;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+                        width: 300px;
+                    }}
+                    .form-group {{
+                        margin-bottom: 15px;
+                    }}
+                    .form-group label {{
+                        display: block;
+                        margin-bottom: 5px;
+                    }}
+                    .form-group input {{
+                        width: 100%;
+                        padding: 8px;
+                        border: 1px solid #36393F;
+                        border-radius: 4px;
+                        background-color: #40444B;
+                        color: #DCDDDE;
+                        box-sizing: border-box;
+                    }}
+                    .btn {{
+                        width: 100%;
+                        padding: 10px;
+                        background-color: #5865F2;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    }}
+                    .btn:hover {{
+                        background-color: #4752C4;
+                    }}
+                    .error {{
+                        color: #ff6b6b;
+                        font-size: 0.9em;
+                        margin-bottom: 10px;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h2>Register</h2>
+                    <div class="error">Password must be at least 8 characters</div>
+                    <form method="post">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                        <div class="form-group">
+                            <label for="username">Username:</label>
+                            <input type="text" id="username" name="username" required value="{username or ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" name="email" required value="{email or ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="password1">Password:</label>
+                            <input type="password" id="password1" name="password1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password2">Confirm Password:</label>
+                            <input type="password" id="password2" name="password2" required>
+                        </div>
+                        <button type="submit" class="btn">Register</button>
+                    </form>
+                    <p style="text-align: center; margin-top: 15px;">
+                        <a href="/accounts/login/" style="color: #5865F2;">Already have an account? Login</a>
+                    </p>
+                </div>
+            </body>
+            </html>
+            '''
+            return HttpResponse(form_html)
         
         if not username or not email:
-            return HttpResponse("Username and email are required")
+            # Show form with error
+            form_html = f'''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Register</title>
+                <style>
+                    body {{ 
+                        font-family: Arial, sans-serif;
+                        background-color: #36393F;
+                        color: #DCDDDE;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                    }}
+                    .container {{
+                        background-color: #2F3136;
+                        padding: 20px;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+                        width: 300px;
+                    }}
+                    .form-group {{
+                        margin-bottom: 15px;
+                    }}
+                    .form-group label {{
+                        display: block;
+                        margin-bottom: 5px;
+                    }}
+                    .form-group input {{
+                        width: 100%;
+                        padding: 8px;
+                        border: 1px solid #36393F;
+                        border-radius: 4px;
+                        background-color: #40444B;
+                        color: #DCDDDE;
+                        box-sizing: border-box;
+                    }}
+                    .btn {{
+                        width: 100%;
+                        padding: 10px;
+                        background-color: #5865F2;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    }}
+                    .btn:hover {{
+                        background-color: #4752C4;
+                    }}
+                    .error {{
+                        color: #ff6b6b;
+                        font-size: 0.9em;
+                        margin-bottom: 10px;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h2>Register</h2>
+                    <div class="error">Username and email are required</div>
+                    <form method="post">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                        <div class="form-group">
+                            <label for="username">Username:</label>
+                            <input type="text" id="username" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password1">Password:</label>
+                            <input type="password" id="password1" name="password1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password2">Confirm Password:</label>
+                            <input type="password" id="password2" name="password2" required>
+                        </div>
+                        <button type="submit" class="btn">Register</button>
+                    </form>
+                    <p style="text-align: center; margin-top: 15px;">
+                        <a href="/accounts/login/" style="color: #5865F2;">Already have an account? Login</a>
+                    </p>
+                </div>
+            </body>
+            </html>
+            '''
+            return HttpResponse(form_html)
         
         # Check if user already exists
         from django.contrib.auth.models import User
         if User.objects.filter(username=username).exists():
-            return HttpResponse("Username already exists")
+            # Show form with error
+            form_html = f'''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Register</title>
+                <style>
+                    body {{ 
+                        font-family: Arial, sans-serif;
+                        background-color: #36393F;
+                        color: #DCDDDE;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                    }}
+                    .container {{
+                        background-color: #2F3136;
+                        padding: 20px;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+                        width: 300px;
+                    }}
+                    .form-group {{
+                        margin-bottom: 15px;
+                    }}
+                    .form-group label {{
+                        display: block;
+                        margin-bottom: 5px;
+                    }}
+                    .form-group input {{
+                        width: 100%;
+                        padding: 8px;
+                        border: 1px solid #36393F;
+                        border-radius: 4px;
+                        background-color: #40444B;
+                        color: #DCDDDE;
+                        box-sizing: border-box;
+                    }}
+                    .btn {{
+                        width: 100%;
+                        padding: 10px;
+                        background-color: #5865F2;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    }}
+                    .btn:hover {{
+                        background-color: #4752C4;
+                    }}
+                    .error {{
+                        color: #ff6b6b;
+                        font-size: 0.9em;
+                        margin-bottom: 10px;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h2>Register</h2>
+                    <div class="error">Username already exists</div>
+                    <form method="post">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                        <div class="form-group">
+                            <label for="username">Username:</label>
+                            <input type="text" id="username" name="username" required value="{username or ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" name="email" required value="{email or ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="password1">Password:</label>
+                            <input type="password" id="password1" name="password1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password2">Confirm Password:</label>
+                            <input type="password" id="password2" name="password2" required>
+                        </div>
+                        <button type="submit" class="btn">Register</button>
+                    </form>
+                    <p style="text-align: center; margin-top: 15px;">
+                        <a href="/accounts/login/" style="color: #5865F2;">Already have an account? Login</a>
+                    </p>
+                </div>
+            </body>
+            </html>
+            '''
+            return HttpResponse(form_html)
         
         # Create the user
         user = User.objects.create_user(username=username, email=email, password=password1)
@@ -229,13 +595,13 @@ def register(request):
         return redirect('login')
     
     # Show registration form
-    form_html = '''
+    form_html = f'''
     <!DOCTYPE html>
     <html>
     <head>
         <title>Register</title>
         <style>
-            body { 
+            body {{ 
                 font-family: Arial, sans-serif;
                 background-color: #36393F;
                 color: #DCDDDE;
@@ -244,22 +610,22 @@ def register(request):
                 align-items: center;
                 height: 100vh;
                 margin: 0;
-            }
-            .container {
+            }}
+            .container {{
                 background-color: #2F3136;
                 padding: 20px;
                 border-radius: 8px;
                 box-shadow: 0 2px 10px rgba(0,0,0,0.5);
                 width: 300px;
-            }
-            .form-group {
+            }}
+            .form-group {{
                 margin-bottom: 15px;
-            }
-            .form-group label {
+            }}
+            .form-group label {{
                 display: block;
                 margin-bottom: 5px;
-            }
-            .form-group input {
+            }}
+            .form-group input {{
                 width: 100%;
                 padding: 8px;
                 border: 1px solid #36393F;
@@ -267,8 +633,8 @@ def register(request):
                 background-color: #40444B;
                 color: #DCDDDE;
                 box-sizing: border-box;
-            }
-            .btn {
+            }}
+            .btn {{
                 width: 100%;
                 padding: 10px;
                 background-color: #5865F2;
@@ -276,20 +642,21 @@ def register(request):
                 border: none;
                 border-radius: 4px;
                 cursor: pointer;
-            }
-            .btn:hover {
+            }}
+            .btn:hover {{
                 background-color: #4752C4;
-            }
-            .error {
+            }}
+            .error {{
                 color: #ff6b6b;
                 font-size: 0.9em;
-            }
+            }}
         </style>
     </head>
     <body>
         <div class="container">
             <h2>Register</h2>
             <form method="post">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
                 <div class="form-group">
                     <label for="username">Username:</label>
                     <input type="text" id="username" name="username" required>
