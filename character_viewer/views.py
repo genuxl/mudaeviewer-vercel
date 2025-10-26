@@ -46,12 +46,14 @@ def upload_and_view(request):
                     user=request.user,
                     rank=char_data.get('rank', ''),
                     name=char_data.get('name', ''),
-                    series=char_data.get('series', ''),
+                    series=char_data.get('series', ''),  # This field might not be in the JSON, so it defaults to empty string
                     value=char_data.get('value', ''),
                     note=char_data.get('note', ''),
                     image=image_url,  # Store the full image URL as provided in the JSON
                     sort_order=sort_order,  # Add the order in which they appear in the JSON
                     in_trade_list=False,  # Initialize to not in trade list
+                    keys=char_data.get('keys', 0),  # Number of keys for the character
+                    key_type=char_data.get('key_type', ''),  # Type of key (bronze, silver, gold, chaos)
                 )
                 sort_order += 1
         except json.JSONDecodeError:
@@ -93,6 +95,9 @@ def upload_and_view(request):
         all_characters = all_characters.extra(
             select={'kakera_value': "CAST(REPLACE(value, ' ka', '') AS INTEGER)"}
         ).order_by('-kakera_value')
+    elif sort_by == 'keys':
+        # Sort by number of keys in descending order
+        all_characters = all_characters.order_by('-keys')
     else:  # default order
         all_characters = all_characters.order_by('sort_order')  # Order by JSON order
     
@@ -129,6 +134,9 @@ def trade_list(request):
     # Handle search within the trade list
     search_query = request.GET.get('search', '')
     
+    # Handle sorting
+    sort_by = request.GET.get('sort_by', 'default')  # default, rank, kakera, keys
+    
     # Get all characters that are in the trade list for current user
     trade_characters = Character.objects.filter(user=request.user, in_trade_list=True)
     
@@ -138,8 +146,22 @@ def trade_list(request):
             name__icontains=search_query
         )
     
-    # Order by sort_order
-    trade_characters = trade_characters.order_by('sort_order')
+    # Handle sorting for trade list
+    if sort_by == 'rank':
+        # Sort by rank (extract numeric value from the rank string like "#1,275")
+        trade_characters = trade_characters.extra(
+            select={'rank_numeric': "CAST(REPLACE(REPLACE(rank, '#', ''), ',', '') AS INTEGER)"}
+        ).order_by('rank_numeric')
+    elif sort_by == 'kakera':
+        # Sort by value (kakera) in descending order, extracting numeric value
+        trade_characters = trade_characters.extra(
+            select={'kakera_value': "CAST(REPLACE(value, ' ka', '') AS INTEGER)"}
+        ).order_by('-kakera_value')
+    elif sort_by == 'keys':
+        # Sort by number of keys in descending order
+        trade_characters = trade_characters.order_by('-keys')
+    else:  # default order
+        trade_characters = trade_characters.order_by('sort_order')
     
     # Paginate trade characters (10 per page)
     paginator = Paginator(trade_characters, 10)

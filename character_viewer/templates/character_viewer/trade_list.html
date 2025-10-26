@@ -168,6 +168,17 @@
         </div>
         
         {% if page_obj %}
+        <!-- Add sorting controls for trade list -->
+        <div class="sort-container" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
+            <label for="trade-list-sort-select">Sort by:</label>
+            <select id="trade-list-sort-select" onchange="updateTradeListSort()">
+                <option value="default" {% if request.GET.sort_by == 'default' or not request.GET.sort_by %}selected{% endif %}>Default</option>
+                <option value="rank" {% if request.GET.sort_by == 'rank' %}selected{% endif %}>Rank</option>
+                <option value="kakera" {% if request.GET.sort_by == 'kakera' %}selected{% endif %}>Kakera</option>
+                <option value="keys" {% if request.GET.sort_by == 'keys' %}selected{% endif %}>Keys</option>
+            </select>
+        </div>
+        
         <div class="trade-list-grid">
             {% for character in page_obj %}
             <div class="character-card">
@@ -187,6 +198,20 @@
                     <div class="character-name">{{ character.name }}</div>
                     <div class="character-series">{{ character.series }}</div>
                     <div class="character-value">{{ character.value }}</div>
+                    {% if character.keys > 0 %}
+                        <div class="character-keys">
+                            {% if character.key_type == 'bronze' %}
+                                <img src="https://static.wikia.nocookie.net/mudae/images/9/96/BronzeSoulKey.png/revision/latest/scale-to-width-down/80?cb=20201019043053" alt="Bronze Key" title="{{ character.keys }}x Bronze Key" style="width: 20px; height: 20px; vertical-align: middle;" />
+                            {% elif character.key_type == 'silver' %}
+                                <img src="https://static.wikia.nocookie.net/mudae/images/5/59/SilverSoulKey.png/revision/latest/scale-to-width-down/80?cb=20201019043103" alt="Silver Key" title="{{ character.keys }}x Silver Key" style="width: 20px; height: 20px; vertical-align: middle;" />
+                            {% elif character.key_type == 'gold' %}
+                                <img src="https://static.wikia.nocookie.net/mudae/images/d/d3/GoldSoulKey.png/revision/latest/scale-to-width-down/80?cb=20201019043109" alt="Gold Key" title="{{ character.keys }}x Gold Key" style="width: 20px; height: 20px; vertical-align: middle;" />
+                            {% elif character.key_type == 'chaos' %}
+                                <img src="https://static.wikia.nocookie.net/mudae/images/e/e7/ChaosSoulKey.png/revision/latest/scale-to-width-down/80?cb=20201019043116" alt="Chaos Key" title="{{ character.keys }}x Chaos Key" style="width: 20px; height: 20px; vertical-align: middle;" />
+                            {% endif %}
+                            <span style="font-size: 0.9em; color: #F8D56C;">x{{ character.keys }}</span>
+                        </div>
+                    {% endif %}
                     <button class="remove-btn" onclick="toggleTradeList({{ character.id }}, this)">Remove</button>
                 </div>
             </div>
@@ -407,6 +432,16 @@
                     console.error('Error:', error);
                 });
             }
+        }
+        
+        function updateTradeListSort() {
+            const sortBy = document.getElementById('trade-list-sort-select').value;
+            const searchQuery = document.getElementById('search-input').value;
+            let url = `?sort_by=${sortBy}`;
+            if (searchQuery) {
+                url += `&search=${encodeURIComponent(searchQuery)}`;
+            }
+            window.location.href = url;
         }
     </script>
 </body>
