@@ -36,13 +36,23 @@ STATIC_URL = '/static/'
 STATIC_ROOT = '/tmp/staticfiles'
 
 # Ensure static root directory exists
-import os
 if not os.path.exists(STATIC_ROOT):
     try:
         os.makedirs(STATIC_ROOT, exist_ok=True)
     except Exception:
         # If we can't create the directory, use a fallback
         STATIC_ROOT = '/tmp/static'
+
+# Media files - use temporary directory
+MEDIA_ROOT = '/tmp/mudae_media'
+MEDIA_URL = '/media/'
+
+# Ensure media directory exists
+if not os.path.exists(MEDIA_ROOT):
+    try:
+        os.makedirs(MEDIA_ROOT, exist_ok=True)
+    except Exception:
+        MEDIA_ROOT = '/tmp/media'
 
 # Use WhiteNoise for static file serving
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

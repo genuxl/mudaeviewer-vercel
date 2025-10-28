@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.py",
+      "src": "mudae_project/wsgi.py",
       "use": "@vercel/python",
       "config": { 
         "maxLambdaSize": "15mb", 
@@ -20,13 +20,12 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/api/index.py"
+      "dest": "mudae_project/wsgi.py"
     }
   ],
   "env": {
     "DJANGO_SETTINGS_MODULE": "mudae_project.vercel_settings",
     "VERCEL": "1",
     "DEBUG": "False"
-  },
-  "buildCommand": "./build.sh"
+  }
 }
