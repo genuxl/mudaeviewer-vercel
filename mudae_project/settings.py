@@ -24,15 +24,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-@^8fob&ac6zr%l@ujftrlj3vkxfe&b$@r52sd*(5b)x*yxqz*n')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = 'RENDER' not in os.environ
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
 ]
 
-# Render adds its host to environment
-if 'RENDER_EXTERNAL_HOSTNAME' in os.environ:
+# Add Vercel environment detection
+if 'VERCEL' in os.environ or 'VERCEL_ENV' in os.environ:
+    ALLOWED_HOSTS = ['*']  # Vercel handles domain routing
+elif 'RENDER_EXTERNAL_HOSTNAME' in os.environ:
     ALLOWED_HOSTS.append(os.environ['RENDER_EXTERNAL_HOSTNAME'])
 
 # SSL/HTTPS settings for production
@@ -91,25 +93,30 @@ WSGI_APPLICATION = 'mudae_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# Check if running on Render by looking for RENDER_EXTERNAL_HOSTNAME environment variable
-if 'RENDER_EXTERNAL_HOSTNAME' in os.environ:
+# Check for database environment variables (for Vercel + Supabase)
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+# Check if running on production (Render, Vercel, etc.)
+if os.environ.get('DATABASE_URL'):
     import dj_database_url
-    # Production settings for Render
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL'),
-            conn_max_age=600,
-            ssl_require=True
-        )
-    }
-else:
-    # Local development settings
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+    DATABASES['default'] = dj_database_url.parse(
+        os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        ssl_require=True
+    )
+elif 'VERCEL' in os.environ or 'RENDER_EXTERNAL_HOSTNAME' in os.environ:
+    # Production settings for Vercel or Render
+    import dj_database_url
+    DATABASES['default'] = dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        ssl_require=True
+    )
 
 
 # Password validation
@@ -146,37 +153,36 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-if not DEBUG:
-    # Tell Django to copy static assets into a path called `staticfiles` (this is specific to Render)
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-else:
-    # For local development, only if directory exists
-    STATICFILES_DIRS = []
-    static_dir = os.path.join(BASE_DIR, 'static')
-    if os.path.exists(static_dir):
-        STATICFILES_DIRS = [static_dir]
+# For all environments, including local, Vercel, and Render
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Render adds its host to environment
-if 'RENDER_EXTERNAL_HOSTNAME' in os.environ:
-    ALLOWED_HOSTS.append(os.environ['RENDER_EXTERNAL_HOSTNAME'])
-    # Update for SSL redirects in production
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = True
+# For local development, only if directory exists
+STATICFILES_DIRS = []
+static_dir = os.path.join(BASE_DIR, 'static')
+if os.path.exists(static_dir) and not os.environ.get('VERCEL'):
+    STATICFILES_DIRS = [static_dir]
 
-# WhiteNoise configuration for serving static files in production
+# WhiteNoise configuration for serving static files
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Import the temporary media directory setup
 from character_viewer.cleanup import get_temp_media_root
 
 # Media files (user uploads) - use temporary directory that gets cleaned up on exit
-MEDIA_URL = '/media/'
-MEDIA_ROOT = get_temp_media_root()
+if 'VERCEL' in os.environ:
+    # On Vercel, use /tmp directory for temporary files
+    import tempfile
+    MEDIA_ROOT = os.path.join(tempfile.gettempdir(), 'mudae_media_vercel')
+    os.makedirs(MEDIA_ROOT, exist_ok=True)
+    MEDIA_URL = '/media/'
+else:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = get_temp_media_root()
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
