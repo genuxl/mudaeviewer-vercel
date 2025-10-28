@@ -19,7 +19,7 @@ from io import BytesIO
 # Get the WSGI application
 application = get_wsgi_application()
 
-def django_view_handler(event, context):
+def handler(event, context):
     """
     Handles requests to the Django application on Vercel.
     """
@@ -118,7 +118,3 @@ def django_view_handler(event, context):
             'body': 'Internal Server Error',
             'isBase64Encoded': False
         }
-    
-# The main handler for Vercel
-def handler(event, context):
-    return django_view_handler(event, context)

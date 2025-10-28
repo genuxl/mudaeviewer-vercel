@@ -155,11 +155,21 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-# For all environments, including local, Vercel, and Render
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# Static files configuration for different environments
+if os.environ.get('VERCEL'):
+    # On Vercel, use a writable directory (/tmp)
+    STATIC_ROOT = '/tmp/staticfiles'
+    # Ensure directory exists
+    import os
+    if not os.path.exists(STATIC_ROOT):
+        try:
+            os.makedirs(STATIC_ROOT, exist_ok=True)
+        except Exception:
+            # Fallback if we can't create the directory
+            STATIC_ROOT = '/tmp/static'
+else:
+    # For local development and other platforms
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # For local development, only if directory exists
 STATICFILES_DIRS = []
@@ -167,7 +177,7 @@ static_dir = os.path.join(BASE_DIR, 'static')
 if os.path.exists(static_dir) and not os.environ.get('VERCEL'):
     STATICFILES_DIRS = [static_dir]
 
-# WhiteNoise configuration for serving static files
+# WhiteNoise configuration for serving static files in production
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Import the temporary media directory setup
@@ -177,6 +187,7 @@ from character_viewer.cleanup import get_temp_media_root
 if 'VERCEL' in os.environ:
     # On Vercel, use /tmp directory for temporary files
     import tempfile
+    import os
     MEDIA_ROOT = os.path.join(tempfile.gettempdir(), 'mudae_media_vercel')
     os.makedirs(MEDIA_ROOT, exist_ok=True)
     MEDIA_URL = '/media/'

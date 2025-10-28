@@ -26,13 +26,23 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'NAME': '/tmp/db.sqlite3',
         }
     }
 
 # Static files for production
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# On Vercel, use /tmp directory which is writable
+STATIC_ROOT = '/tmp/staticfiles'
+
+# Ensure static root directory exists
+import os
+if not os.path.exists(STATIC_ROOT):
+    try:
+        os.makedirs(STATIC_ROOT, exist_ok=True)
+    except Exception:
+        # If we can't create the directory, use a fallback
+        STATIC_ROOT = '/tmp/static'
 
 # Use WhiteNoise for static file serving
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

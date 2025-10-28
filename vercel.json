@@ -27,5 +27,6 @@
     "DJANGO_SETTINGS_MODULE": "mudae_project.vercel_settings",
     "VERCEL": "1",
     "DEBUG": "False"
-  }
+  },
+  "buildCommand": "./build.sh"
 }
