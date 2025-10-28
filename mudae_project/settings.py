@@ -34,8 +34,6 @@ ALLOWED_HOSTS = [
 # Add Vercel environment detection
 if 'VERCEL' in os.environ or 'VERCEL_ENV' in os.environ:
     ALLOWED_HOSTS = ['*']  # Vercel handles domain routing
-elif 'RENDER_EXTERNAL_HOSTNAME' in os.environ:
-    ALLOWED_HOSTS.append(os.environ['RENDER_EXTERNAL_HOSTNAME'])
 
 # SSL/HTTPS settings for production
 if not DEBUG:
