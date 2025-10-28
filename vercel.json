@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "vercel_app.py",
+      "src": "mudae_project/wsgi.py",
       "use": "@vercel/python",
       "config": { 
         "runtime": "python3.9",
@@ -20,7 +20,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "vercel_app.py"
+      "dest": "mudae_project/wsgi.py"
     }
   ]
 }
