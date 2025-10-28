@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import health
+from .views.health import health_check
 
 urlpatterns = [
     path('', views.upload_and_view, name='upload_and_view'),
@@ -10,5 +10,5 @@ urlpatterns = [
     path('remove_all_from_trade_list/', views.remove_all_from_trade_list, name='remove_all_from_trade_list'),
     path('create-admin/', views.temp_create_admin, name='temp_create_admin'),  # Temporary - remove after setup
     path('register/', views.register, name='register'),
-    path('health/', health.health_check, name='health_check'),
+    path('health/', health_check, name='health_check'),
 ]

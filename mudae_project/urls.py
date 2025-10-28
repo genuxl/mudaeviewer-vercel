@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from django.shortcuts import redirect
 from character_viewer.views import custom_logout
-from character_viewer.views import health
+from character_viewer.views.health import health_check
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -13,7 +13,7 @@ urlpatterns = [
     path('accounts/login/', auth_views.LoginView.as_view(), name='login'),
     path('accounts/logout/', custom_logout, name='logout'),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('health/', health.health_check, name='health_check'),
+    path('health/', health_check, name='health_check'),
 ]
 
 # Serve media files during development
