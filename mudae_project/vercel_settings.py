@@ -44,15 +44,12 @@ if not os.path.exists(STATIC_ROOT):
         STATIC_ROOT = '/tmp/static'
 
 # Media files - use temporary directory
-MEDIA_ROOT = '/tmp/mudae_media'
+# In a serverless environment like Vercel, uploaded files are ephemeral
+import tempfile
+import os
+MEDIA_ROOT = os.path.join(tempfile.gettempdir(), 'mudae_media')
+os.makedirs(MEDIA_ROOT, exist_ok=True)
 MEDIA_URL = '/media/'
-
-# Ensure media directory exists
-if not os.path.exists(MEDIA_ROOT):
-    try:
-        os.makedirs(MEDIA_ROOT, exist_ok=True)
-    except Exception:
-        MEDIA_ROOT = '/tmp/media'
 
 # Use WhiteNoise for static file serving
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

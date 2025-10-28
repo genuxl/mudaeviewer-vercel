@@ -180,20 +180,22 @@ if os.path.exists(static_dir) and not os.environ.get('VERCEL'):
 # WhiteNoise configuration for serving static files in production
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Import the temporary media directory setup
-from character_viewer.cleanup import get_temp_media_root
-
-# Media files (user uploads) - use temporary directory that gets cleaned up on exit
+# Media files (user uploads) - use temporary directory
+# In a serverless environment like Vercel, uploaded files are ephemeral
 if 'VERCEL' in os.environ:
     # On Vercel, use /tmp directory for temporary files
     import tempfile
     import os
-    MEDIA_ROOT = os.path.join(tempfile.gettempdir(), 'mudae_media_vercel')
+    MEDIA_ROOT = os.path.join(tempfile.gettempdir(), 'mudae_media')
     os.makedirs(MEDIA_ROOT, exist_ok=True)
     MEDIA_URL = '/media/'
 else:
+    # For local development, use a simple temporary directory
+    import tempfile
+    import os
+    MEDIA_ROOT = os.path.join(tempfile.gettempdir(), 'mudae_media_local')
+    os.makedirs(MEDIA_ROOT, exist_ok=True)
     MEDIA_URL = '/media/'
-    MEDIA_ROOT = get_temp_media_root()
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
